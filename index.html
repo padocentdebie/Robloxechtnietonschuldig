@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VeiligBlox - Speel veilig, zoals Roblox maar dan zonder gevaren</title>
+    <style>
+        /* === ALGEMENE STIJL === */
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+            background-color: #1a1a2e;
+        }
+
+        /* === OVERLAY MENU (bovenop de 3D-wereld) === */
+        #ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Laat klikken op de 3D wereld door als er niets bovenop staat */
+        }
+
+        /* === TITELBALK === */
+        #header {
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #ff4d4d;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+        }
+
+        #header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 800;
+            color: #ffffff;
+            text-shadow: 0 0 15px #ff4d4d, 0 0 30px #cc0000;
+            letter-spacing: 1px;
+        }
+
+        #header h1 span {
+            color: #ffcc00;
+        }
+
+        #header .safe-badge {
+            background: #00cc66;
+            color: white;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 0 20px #00cc66;
+            border: 1px solid #88ff88;
+        }
+
+        /* === VEILIGE CHAT (rechtsonder) === */
+        #safe-chat {
+            pointer-events: auto;
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 280px;
+            background: rgba(10, 10, 30, 0.85);
+            backdrop-filter: blur(8px);
+            border-radius: 16px;
+            border: 2px solid #ffcc00;
+            box-shadow: 0 0 40px rgba(255, 204, 0, 0.3);
+            padding: 16px;
+            color: white;
+        }
+
+        #safe-chat h3 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            color: #ffcc00;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #safe-chat h3::before {
+            content: "🛡️";
+            font-size: 20px;
+        }
+
+        #chat-messages {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 10px;
+            height: 100px;
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            border: 1px solid #444;
+        }
+
+        #chat-messages .msg {
+            padding: 4px 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            margin-bottom: 4px;
+        }
+
+        #chat-messages .msg .user {
+            color: #66ccff;
+            font-weight: bold;
+        }
+
+        #chat-messages .msg .text {
+            color: #eeeeee;
+        }
+
+        /* Knoppen met vaste veilige zinnen */
+        .chat-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .chat-buttons button {
+            pointer-events: auto;
+            flex: 1 0 auto;
+            background: #2a2a4a;
+            border: 1px solid #555;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .chat-buttons button:hover {
+            background: #ffcc00;
+            color: #1a1a2e;
+            border-color: #ffcc00;
+            transform: scale(1.05);
+            font-weight: bold;
+        }
+
+        /* === POLITIE KNOP (linksonder) === */
+        #politie-knop {
+            pointer-events: auto;
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: #cc0000;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(204, 0, 0, 0.7);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 2px solid #ff6666;
+            font-family: inherit;
+        }
+
+        #politie-knop:hover {
+            transform: scale(1.08);
+            background: #ff0000;
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.9);
+        }
+
+        #politie-knop::before {
+            content: "🚔";
+            font-size: 24px;
+        }
+
+        /* === INFORMATIEBALK (onderin het midden) === */
+        #info-balk {
+            pointer-events: none;
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            padding: 10px 24px;
+            border-radius: 40px;
+            color: #ddd;
+            font-size: 14px;
+            border: 1px solid #ffcc00;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        #info-balk strong {
+            color: #ffcc00;
+        }
+
+        /* === SCROLLBAR STYLING === */
+        #chat-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+        #chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #chat-messages::-webkit-scrollbar-thumb {
+            background: #ffcc00;
+            border-radius: 10px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 700px) {
+            #header h1 { font-size: 18px; }
+            #safe-chat { width: 200px; right: 10px; bottom: 10px; }
+            #safe-chat h3 { font-size: 13px; }
+            .chat-buttons button { font-size: 10px; padding: 4px 8px; }
+            #politie-knop { font-size: 14px; padding: 10px 16px; left: 10px; bottom: 10px; }
+            #info-balk { font-size: 11px; padding: 6px 12px; bottom: 80px; white-space: normal; width: 80%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- === 3D-WERELD (Three.js) === -->
+    <div id="game-container"></div>
+
+    <!-- === UI OVERLAY === -->
+    <div id="ui-overlay">
+
+        <!-- HEADER -->
+        <div id="header">
+            <h1>🔲 <span>Veilig</span>Blox</h1>
+            <div class="safe-badge">✅ 100% Veilig | Geen vreemden</div>
+        </div>
+
+        <!-- VEILIGE CHAT (alleen vaste zinnen) -->
+        <div id="safe-chat">
+            <h3>Veilige Chat</h3>
+            <div id="chat-messages">
+                <div class="msg"><span class="user">🟢 Systeem:</span> <span class="text">Welkom! Alleen veilige berichten.</span></div>
+            </div>
+            <div class="chat-buttons">
+                <button data-msg="Hallo! Leuk om te spelen.">👋 Hallo</button>
+                <button data-msg="Wil je samen bouwen?">🏗️ Bouwen?</button>
+                <button data-msg="Leuk spel, veilig hier!">😊 Veilig</button>
+                <button data-msg="Ik ga even pauze.">⏸️ Pauze</button>
+                <button data-msg="Dit is veel beter dan Roblox!">🌟 Top!</button>
+                <button data-msg="Doei, tot later!">👋 Doei</button>
+            </div>
+        </div>
+
+        <!-- POLITIE KNOP (directe hulp) -->
+        <a href="https://www.politie.nl/onderwerpen/online-oplichting" target="_blank" id="politie-knop">
+            Meld online oplichting
+        </a>
+
+        <!-- INFO BALK -->
+        <div id="info-balk">
+            <strong>🔒 VeiligBlox</strong> — Geen chat met vreemden, geen betaalmogelijkheden, geen risico. 
+            <span style="color:#ffcc00;">|</span> Spelenderwijs veilig leren.
+        </div>
+
+    </div>
+
+    <!-- === THREE.JS BIBLIOTHEEK === -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- === 3D-SCRIPT (Roblox-achtige wereld) === -->
+    <script>
+        (function() {
+            // --- 1. SCENE, CAMERA, RENDERER ---
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); // Heldere lucht
+
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(12, 8, 16);
+            camera.lookAt(0, 0, 0);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('game-container').appendChild(renderer.domElement);
+
+            // --- 2. VERLICHTING ---
+            // Ambient
+            const ambient = new THREE.AmbientLight(0x404060, 0.5);
+            scene.add(ambient);
+
+            // Zon (gericht licht voor schaduwen)
+            const sun = new THREE.DirectionalLight(0xffeedd, 1);
+            sun.position.set(15, 20, 10);
+            sun.castShadow = true;
+            sun.shadow.mapSize.width = 1024;
+            sun.shadow.mapSize.height = 1024;
+            const d = 20;
+            sun.shadow.camera.left = -d;
+            sun.shadow.camera.right = d;
+            sun.shadow.camera.top = d;
+            sun.shadow.camera.bottom = -d;
+            sun.shadow.camera.near = 1;
+            sun.shadow.camera.far = 30;
+            scene.add(sun);
+
+            const fillLight = new THREE.DirectionalLight(0x8888ff, 0.3);
+            fillLight.position.set(-10, 5, -10);
+            scene.add(fillLight);
+
+            // --- 3. GROND (gras) ---
+            const groundGeo = new THREE.BoxGeometry(30, 0.5, 30);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x5da130, roughness: 0.8 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.position.y = -0.25;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // --- 4. ROBLOX-ACHTIGE OBJECTEN (blokken, bomen, huisjes) ---
+
+            // Helper functie: blok
+            function addBlock(x, y, z, w, h, d, color, shadow = true) {
+                const geo = new THREE.BoxGeometry(w, h, d);
+                const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4, metalness: 0.1 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(x, y + h/2, z);
+                if (shadow) {
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                }
+                scene.add(mesh);
+                return mesh;
+            }
+
+            // Helper: boom (cilinder + bol)
+            function addTree(x, z) {
+                const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 0.9 });
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 2, 6), trunkMat);
+                trunk.position.set(x, 1, z);
+                trunk.castShadow = true;
+                trunk.receiveShadow = true;
+                scene.add(trunk);
+
+                const leafMat = new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.6 });
+                const leaf = new THREE.Mesh(new THREE.SphereGeometry(1.2, 6, 6), leafMat);
+                leaf.position.set(x, 2.8, z);
+                leaf.castShadow = true;
+                leaf.receiveShadow = true;
+                scene.add(leaf);
+            }
+
+            // --- BOUWWERKEN ---
+
+            // Een huis (Roblox-stijl)
+            addBlock(-4, 0, -3, 3, 2.5, 3, 0xe67e22); // muren oranje
+            addBlock(-4, 1.5, -3, 3.2, 0.3, 3.2, 0xcc3333); // dak rood
+            addBlock(-5.2, 0.2, -3, 0.4, 0.8, 0.4, 0x66ccff); // raam blauw
+            addBlock(-2.8, 0.2, -3, 0.4, 0.8, 0.4, 0x66ccff); // raam blauw
+            addBlock(-4, 0.2, -4.8, 1.2, 1.0, 0.2, 0x8B5A2B); // deur bruin
+
+            // Een toren
+            addBlock(5, 0, 4, 2, 4, 2, 0x3498db);
+            addBlock(5, 2.5, 4, 2.8, 0.4, 2.8, 0xf1c40f); // gele rand
+            addBlock(5, 4.5, 4, 1.2, 0.8, 1.2, 0xe74c3c); // topje
+
+            // Een brug (3 blokken)
+            addBlock(-1, 0.5, 5, 1, 0.3, 1.5, 0x95a5a6);
+            addBlock(0.5, 0.5, 5, 1, 0.3, 1.5, 0x95a5a6);
+            addBlock(2, 0.5, 5, 1, 0.3, 1.5, 0x95a5a6);
+            // pijlers brug
+            addBlock(-1, -0.2, 4.2, 0.3, 0.5, 0.3, 0x7f8c8d);
+            addBlock(-1, -0.2, 5.8, 0.3, 0.5, 0.3, 0x7f8c8d);
+            addBlock(2, -0.2, 4.2, 0.3, 0.5, 0.3, 0x7f8c8d);
+            addBlock(2, -0.2, 5.8, 0.3, 0.5, 0.3, 0x7f8c8d);
+
+            // Losse blokken (speelgoedachtig)
+            addBlock(-6, 0.5, 6, 1.5, 0.8, 1.5, 0xff6b6b);
+            addBlock(7, 0.5, -5, 1.2, 0.8, 1.2, 0x4ecdc4);
+            addBlock(8, 0.8, -2, 0.8, 1.2, 0.8, 0xffe66d);
+
+            // Bomen
+            addTree(-6, -5);
+            addTree(6, -6);
+            addTree(-7, 7);
+            addTree(8, 7);
+            addTree(0, -7);
+
+            // Stapel blokken (zoals in Roblox)
+            addBlock(-2, 0.5, -6, 1.2, 0.6, 1.2, 0x9b59b6);
+            addBlock(-2, 1.1, -6, 1.0, 0.6, 1.0, 0x8e44ad);
+            addBlock(-2, 1.7, -6, 0.8, 0.6, 0.8, 0x732d91);
+
+            // --- 5. WOBBLY BALL (animatie) ---
+            const ballMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 0.2, metalness: 0.1 });
+            const ball = new THREE.Mesh(new THREE.SphereGeometry(0.6, 12, 12), ballMat);
+            ball.position.set(0, 1.2, 0);
+            ball.castShadow = true;
+            ball.receiveShadow = true;
+            scene.add(ball);
+
+            // --- 6. FLOATING TEXT "VEILIG" (met sprites zou kunnen, maar we doen 3D tekst via canvas) ---
+            // Voor de eenvoud: een paar gekleurde kubussen die ronddraaien als "veiligheidsmarkering"
+            const markerMat = new THREE.MeshStandardMaterial({ color: 0x00ff88, emissive: 0x004422 });
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                const radius = 10;
+                const marker = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), markerMat);
+                marker.position.set(Math.cos(angle) * radius, 0.4, Math.sin(angle) * radius);
+                marker.castShadow = true;
+                scene.add(marker);
+            }
+
+            // --- 7. CAMERA BEWEGING (langzaam ronddraaien) ---
+            let angle = 0;
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Bal laten stuiteren
+                ball.position.y = 1.2 + Math.sin(Date.now() * 0.003) * 0.6;
+
+                // Camera langzaam om de wereld draaien
+                angle += 0.001;
+                const radius = 20;
+                const camX = Math.sin(angle) * radius;
+                const camZ = Math.cos(angle) * radius;
+                camera.position.x = camX;
+                camera.position.z = camZ;
+                camera.position.y = 6 + Math.sin(angle * 0.5) * 2;
+                camera.lookAt(0, 0, 0);
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // --- 8. WINDOW RESIZE ---
+            window.addEventListener('resize', function() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+        })();
+    </script>
+
+    <!-- === CHAT FUNCTIONALITEIT (veilige, vooraf ingestelde berichten) === -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatMessages = document.getElementById('chat-messages');
+            const buttons = document.querySelectorAll('.chat-buttons button');
+
+            function addMessage(user, text) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'msg';
+                msgDiv.innerHTML = `<span class="user">${user}</span> <span class="text">${text}</span>`;
+                chatMessages.appendChild(msgDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                // Max 20 berichten houden
+                while (chatMessages.children.length > 20) {
+                    chatMessages.removeChild(chatMessages.firstChild);
+                }
+            }
+
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const msg = this.getAttribute('data-msg');
+                    // Voeg bericht toe als "Speler" (veilig, geen echte namen)
+                    addMessage('🧑 Speler', msg);
+                    // Automatisch vriendelijk antwoord van het systeem (om het gezellig te maken)
+                    setTimeout(() => {
+                        const antwoorden = [
+                            'Leuk! 🤗', 'Veilig hier! 🔒', 'Goed idee! 👍', 
+                            'Top! 😄', 'Doe voorzichtig! 🛡️', 'Fijn! 🌟'
+                        ];
+                        const randomAntwoord = antwoorden[Math.floor(Math.random() * antwoorden.length)];
+                        addMessage('🟢 VeiligBlox', randomAntwoord);
+                    }, 600);
+                });
+            });
+
+            // Begroeting bij start
+            setTimeout(() => {
+                addMessage('🟢 VeiligBlox', 'Probeer eens een knopje hierboven! 👆');
+            }, 1500);
+        });
+    </script>
+
+</body>
+</html>
