@@ -253,7 +253,7 @@
             background: #ff0000;
         }
 
-        /* === VOORBEELD WEERGAVE === */
+        /* === VOORBEELD === */
         #voorbeeld-container {
             pointer-events: auto;
             position: absolute;
@@ -427,7 +427,7 @@
             color: #ffcc00;
         }
 
-        /* === SCROLLBAR === */
+        /* SCROLLBAR */
         #chat-messages::-webkit-scrollbar,
         #voorbeeld-container .stappen::-webkit-scrollbar {
             width: 3px;
@@ -438,7 +438,6 @@
             border-radius: 10px;
         }
 
-        /* RESPONSIVE */
         @media (max-width: 768px) {
             #header h1 {
                 font-size: 16px;
@@ -606,6 +605,7 @@
             // --- CONFIG ---
             const MAX_BLOCKS = 150;
             const GRID_SIZE = 0.5;
+            const BLOCK_SIZE = 0.8;
 
             // --- STATE ---
             let selectedColor = '#ff6b6b';
@@ -615,7 +615,6 @@
             let currentOpdracht = null;
             let blocks = [];
             let scene, camera, renderer, ground;
-            let opdrachtStappen = {};
             let voltooideStappen = new Set();
 
             // --- DOM ---
@@ -634,117 +633,119 @@
             const voorbeeldStappen = document.getElementById('voorbeeld-stappen');
             const closeOpdrachtBtn = document.getElementById('close-opdracht');
 
-            // --- OPDACHTEN DEFINITIES ---
+            // --- OPDACHTEN ---
             const OPDACHTEN = {
                 vogel: {
                     titel: '🐦 Bouw een vogel',
                     beschrijving: 'Maak een kleurrijke vogel met een oranje lijf, blauwe vleugels en een gele kop.',
                     hint: '💡 Begin met het lijf (oranje) op de grond, dan vleugels (blauw) links en rechts, en de kop (geel) bovenop.',
-                    kleuren: ['#ff6b6b', '#45b7d1', '#ffcc00'],
                     stappen: [
-                        { tekst: 'Lijf: oranje blok (1x1x1) op de grond', check: (b) => b.color === '#ff6b6b' && b.y === 0.5 &&
-                                b.size === 1 },
-                        { tekst: 'Vleugels: blauwe blokken links en rechts van het lijf', check: (b) => b.color ===
-                                '#45b7d1' && b.y === 0.5 },
-                        { tekst: 'Kop: geel blok bovenop het lijf', check: (b) => b.color === '#ffcc00' && b.y >= 1.5 }
+                        { tekst: 'Lijf: oranje blok op de grond', check: () => blocks.filter(b => b.userData
+                                .color === '#ff6b6b' && Math.abs(b.userData.y - 0) < 0.1).length > 0 },
+                        { tekst: 'Vleugels: blauwe blokken links en rechts', check: () => blocks.filter(b => b
+                                .userData.color === '#45b7d1' && Math.abs(b.userData.y - 0) < 0.1).length >= 2 },
+                        { tekst: 'Kop: geel blok bovenop het lijf', check: () => blocks.filter(b => b.userData
+                                .color === '#ffcc00' && b.userData.y >= 0.8).length > 0 }
                     ],
                     voorbeeld: [
-                        { x: 0, y: 0.5, z: 0, color: '#ff6b6b', size: 1 },
-                        { x: -1.2, y: 0.5, z: 0, color: '#45b7d1', size: 0.6 },
-                        { x: 1.2, y: 0.5, z: 0, color: '#45b7d1', size: 0.6 },
-                        { x: 0, y: 1.5, z: 0, color: '#ffcc00', size: 0.6 }
+                        { x: 0, y: 0, z: 0, color: '#ff6b6b' },
+                        { x: -1.2, y: 0, z: 0, color: '#45b7d1' },
+                        { x: 1.2, y: 0, z: 0, color: '#45b7d1' },
+                        { x: 0, y: 0.8, z: 0, color: '#ffcc00' }
                     ]
                 },
                 olifant: {
                     titel: '🐘 Bouw een olifant',
                     beschrijving: 'Bouw een grijze olifant met een roze slurf en witte slagtanden.',
-                    hint: '💡 Begin met het grote grijze lichaam, dan de poten, de slurf (roze) en als laatste de ogen (wit).',
-                    kleuren: ['#a29bfe', '#ff9ff3', '#ffffff'],
+                    hint: '💡 Begin met het grote grijze lichaam, dan de slurf (roze) en als laatste de slagtanden (wit).',
                     stappen: [
-                        { tekst: 'Lichaam: groot grijs blok', check: (b) => b.color === '#a29bfe' && b.size >= 1 &&
-                                b.y === 0.5 },
-                        { tekst: 'Slurf: roze blok aan de voorkant', check: (b) => b.color === '#ff9ff3' && b.z <= -
-                                0.5 },
-                        { tekst: 'Slagtanden: witte blokjes aan de zijkant van de slurf', check: (b) => b.color ===
-                                '#ffffff' && b.y === 0.5 }
+                        { tekst: 'Lichaam: groot grijs blok', check: () => blocks.filter(b => b.userData
+                                .color === '#a29bfe' && Math.abs(b.userData.y - 0) < 0.1).length > 0 },
+                        { tekst: 'Slurf: roze blok aan de voorkant', check: () => blocks.filter(b => b.userData
+                                .color === '#ff9ff3' && Math.abs(b.userData.y - 0) < 0.1).length > 0 },
+                        { tekst: 'Slagtanden: witte blokjes', check: () => blocks.filter(b => b.userData
+                                .color === '#ffffff' && Math.abs(b.userData.y - 0) < 0.1).length >= 2 }
                     ],
                     voorbeeld: [
-                        { x: 0, y: 0.5, z: 0, color: '#a29bfe', size: 1.2 },
-                        { x: -0.8, y: 0.5, z: -0.6, color: '#a29bfe', size: 0.5 },
-                        { x: 0.8, y: 0.5, z: -0.6, color: '#a29bfe', size: 0.5 },
-                        { x: 0, y: 0.5, z: -1.2, color: '#ff9ff3', size: 0.5 },
-                        { x: -0.4, y: 0.5, z: -1.2, color: '#ffffff', size: 0.3 },
-                        { x: 0.4, y: 0.5, z: -1.2, color: '#ffffff', size: 0.3 }
+                        { x: 0, y: 0, z: 0, color: '#a29bfe' },
+                        { x: -0.8, y: 0, z: -0.6, color: '#a29bfe' },
+                        { x: 0.8, y: 0, z: -0.6, color: '#a29bfe' },
+                        { x: 0, y: 0, z: -1.2, color: '#ff9ff3' },
+                        { x: -0.4, y: 0, z: -1.2, color: '#ffffff' },
+                        { x: 0.4, y: 0, z: -1.2, color: '#ffffff' }
                     ]
                 },
                 cijfer2: {
                     titel: '🔢 Bouw het cijfer 2',
                     beschrijving: 'Maak het cijfer 2 met blokken in jouw favoriete kleur.',
                     hint: '💡 Begin bovenaan, maak een gebogen lijn naar beneden en eindig met een streepje onderaan.',
-                    kleuren: ['#ff6b6b', '#4ecdc4', '#ffcc00'],
                     stappen: [
-                        { tekst: 'Bovenste horizontale lijn: 3 blokken naast elkaar', check: (b) => b.y >= 1.5 &&
-                                b.size === 0.5 },
-                        { tekst: 'Diagonale lijn: blokken schuin naar beneden', check: (b) => b.y >= 0.5 && b.y < 1.5 },
-                        { tekst: 'Onderste horizontale lijn: 3 blokken op de grond', check: (b) => b.y === 0.5 &&
-                                b.size === 0.5 }
+                        { tekst: 'Bovenste horizontale lijn: 3 blokken naast elkaar', check: () => blocks
+                                .filter(b => Math.abs(b.userData.y - 0.8) < 0.1).length >= 3 },
+                        { tekst: 'Diagonale lijn: blokken schuin naar beneden', check: () => blocks.filter(b =>
+                                Math.abs(b.userData.y - 0.4) < 0.1).length >= 1 },
+                        { tekst: 'Onderste horizontale lijn: 3 blokken op de grond', check: () => blocks
+                                .filter(b => Math.abs(b.userData.y - 0) < 0.1).length >= 3 }
                     ],
                     voorbeeld: [
-                        { x: -1, y: 1.5, z: 0, color: '#ff6b6b', size: 0.5 },
-                        { x: -0.5, y: 1.5, z: 0, color: '#ff6b6b', size: 0.5 },
-                        { x: 0, y: 1.5, z: 0, color: '#ff6b6b', size: 0.5 },
-                        { x: 0.5, y: 1.0, z: 0, color: '#ff6b6b', size: 0.5 },
-                        { x: 0.5, y: 0.5, z: 0, color: '#ff6b6b', size: 0.5 },
-                        { x: 0, y: 0.5, z: 0, color: '#ff6b6b', size: 0.5 },
-                        { x: -0.5, y: 0.5, z: 0, color: '#ff6b6b', size: 0.5 },
-                        { x: -1, y: 0.5, z: 0, color: '#ff6b6b', size: 0.5 }
+                        { x: -1, y: 0.8, z: 0, color: '#ff6b6b' },
+                        { x: -0.5, y: 0.8, z: 0, color: '#ff6b6b' },
+                        { x: 0, y: 0.8, z: 0, color: '#ff6b6b' },
+                        { x: 0.5, y: 0.4, z: 0, color: '#ff6b6b' },
+                        { x: 0.5, y: 0, z: 0, color: '#ff6b6b' },
+                        { x: 0, y: 0, z: 0, color: '#ff6b6b' },
+                        { x: -0.5, y: 0, z: 0, color: '#ff6b6b' },
+                        { x: -1, y: 0, z: 0, color: '#ff6b6b' }
                     ]
                 },
                 toren: {
                     titel: '🏗️ Bouw een hoge toren',
-                    beschrijving: 'Bouw een toren van minimaal 10 blokken hoog, met een vlag bovenop.',
+                    beschrijving: 'Bouw een toren van minimaal 8 blokken hoog, met een vlag bovenop.',
                     hint: '💡 Stapel de blokken netjes op elkaar. Gebruik een ander kleur voor de vlag!',
-                    kleuren: ['#ff6b6b', '#ffcc00', '#4ecdc4', '#45b7d1'],
                     stappen: [
-                        { tekst: 'Basis: 4 blokken op de grond in een vierkant', check: (b) => b.y === 0.5 },
-                        { tekst: 'Toren: minimaal 8 blokken hoog gestapeld', check: (b) => b.y >= 4.0 },
-                        { tekst: 'Vlag: een ander kleur blok bovenop', check: (b) => b.y >= 5.0 }
+                        { tekst: 'Basis: 4 blokken op de grond in een vierkant', check: () => blocks.filter(b =>
+                                Math.abs(b.userData.y - 0) < 0.1).length >= 4 },
+                        { tekst: 'Toren: minimaal 8 blokken hoog gestapeld', check: () => {
+                                const maxY = Math.max(...blocks.map(b => b.userData.y + BLOCK_SIZE), 0);
+                                return maxY >= 4.0;
+                            } },
+                        { tekst: 'Vlag: een ander kleur blok bovenop', check: () => {
+                                const maxY = Math.max(...blocks.map(b => b.userData.y + BLOCK_SIZE), 0);
+                                return maxY >= 4.8;
+                            } }
                     ],
                     voorbeeld: [
-                        { x: -0.5, y: 0.5, z: -0.5, color: '#45b7d1', size: 0.5 },
-                        { x: 0.5, y: 0.5, z: -0.5, color: '#45b7d1', size: 0.5 },
-                        { x: -0.5, y: 0.5, z: 0.5, color: '#45b7d1', size: 0.5 },
-                        { x: 0.5, y: 0.5, z: 0.5, color: '#45b7d1', size: 0.5 },
-                        { x: 0, y: 1.0, z: 0, color: '#ffcc00', size: 0.5 },
-                        { x: 0, y: 1.5, z: 0, color: '#ffcc00', size: 0.5 },
-                        { x: 0, y: 2.0, z: 0, color: '#ffcc00', size: 0.5 },
-                        { x: 0, y: 2.5, z: 0, color: '#ffcc00', size: 0.5 },
-                        { x: 0, y: 3.0, z: 0, color: '#ffcc00', size: 0.5 },
-                        { x: 0, y: 3.5, z: 0, color: '#ffcc00', size: 0.5 },
-                        { x: 0, y: 4.0, z: 0, color: '#ffcc00', size: 0.5 },
-                        { x: 0, y: 4.5, z: 0, color: '#ffcc00', size: 0.5 },
-                        { x: 0, y: 5.0, z: 0, color: '#ff6b6b', size: 0.5 }
+                        { x: -0.5, y: 0, z: -0.5, color: '#45b7d1' },
+                        { x: 0.5, y: 0, z: -0.5, color: '#45b7d1' },
+                        { x: -0.5, y: 0, z: 0.5, color: '#45b7d1' },
+                        { x: 0.5, y: 0, z: 0.5, color: '#45b7d1' },
+                        { x: 0, y: 0.8, z: 0, color: '#ffcc00' },
+                        { x: 0, y: 1.6, z: 0, color: '#ffcc00' },
+                        { x: 0, y: 2.4, z: 0, color: '#ffcc00' },
+                        { x: 0, y: 3.2, z: 0, color: '#ffcc00' },
+                        { x: 0, y: 4.0, z: 0, color: '#ffcc00' },
+                        { x: 0, y: 4.8, z: 0, color: '#ff6b6b' }
                     ]
                 },
                 kasteel: {
                     titel: '🏰 Bouw een kasteel',
                     beschrijving: 'Bouw een kasteel met een hoofdtoren, twee kleine torens en een muur.',
-                    hint: '💡 Begin met de hoofdtoren in het midden, dan de kleine torens links en rechts, en verbind ze met muren.',
-                    kleuren: ['#ff9f43', '#54a0ff', '#1dd1a1', '#ff6b6b'],
+                    hint: '💡 Begin met de hoofdtoren in het midden, dan de kleine torens links en rechts.',
                     stappen: [
-                        { tekst: 'Hoofdtoren: groot blok in het midden', check: (b) => b.color === '#ff9f43' && b
-                                .size >= 1.2 && b.y === 0.5 },
-                        { tekst: 'Kleine torens: blokken links en rechts van de hoofdtoren', check: (b) => b.color ===
-                                '#54a0ff' && b.y === 0.5 },
-                        { tekst: 'Muur: blokken die de torens verbinden', check: (b) => b.color === '#1dd1a1' }
+                        { tekst: 'Hoofdtoren: groot blok in het midden', check: () => blocks.filter(b => b
+                                .userData.color === '#ff9f43' && Math.abs(b.userData.y - 0) < 0.1).length > 0 },
+                        { tekst: 'Kleine torens: blokken links en rechts', check: () => blocks.filter(b => b
+                                .userData.color === '#54a0ff' && Math.abs(b.userData.y - 0) < 0.1).length >= 2 },
+                        { tekst: 'Muur: blokken die de torens verbinden', check: () => blocks.filter(b => b
+                                .userData.color === '#1dd1a1' && Math.abs(b.userData.y - 0) < 0.1).length >= 2 }
                     ],
                     voorbeeld: [
-                        { x: 0, y: 0.5, z: 0, color: '#ff9f43', size: 1.2 },
-                        { x: -1.8, y: 0.5, z: 0, color: '#54a0ff', size: 0.8 },
-                        { x: 1.8, y: 0.5, z: 0, color: '#54a0ff', size: 0.8 },
-                        { x: -1.2, y: 0.5, z: 0, color: '#1dd1a1', size: 0.5 },
-                        { x: 1.2, y: 0.5, z: 0, color: '#1dd1a1', size: 0.5 },
-                        { x: 0, y: 1.0, z: 0, color: '#ff6b6b', size: 0.5 }
+                        { x: 0, y: 0, z: 0, color: '#ff9f43' },
+                        { x: -1.8, y: 0, z: 0, color: '#54a0ff' },
+                        { x: 1.8, y: 0, z: 0, color: '#54a0ff' },
+                        { x: -1.2, y: 0, z: 0, color: '#1dd1a1' },
+                        { x: 1.2, y: 0, z: 0, color: '#1dd1a1' },
+                        { x: 0, y: 0.8, z: 0, color: '#ff6b6b' }
                     ]
                 }
             };
@@ -765,7 +766,6 @@
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 document.getElementById('game-container').appendChild(renderer.domElement);
 
-                // Licht
                 const ambient = new THREE.AmbientLight(0x404060, 0.6);
                 scene.add(ambient);
 
@@ -787,526 +787,4 @@
                 fill.position.set(-10, 5, -10);
                 scene.add(fill);
 
-                const hemi = new THREE.HemisphereLight(0x87CEEB, 0x3a7d44, 0.4);
-                scene.add(hemi);
-            }
-
-            function createGround() {
-                const geo = new THREE.PlaneGeometry(30, 30);
-                const mat = new THREE.MeshStandardMaterial({
-                    color: 0x5da130,
-                    roughness: 0.9,
-                    metalness: 0
-                });
-                ground = new THREE.Mesh(geo, mat);
-                ground.rotation.x = -Math.PI / 2;
-                ground.position.y = 0;
-                ground.receiveShadow = true;
-                ground.name = 'ground';
-                scene.add(ground);
-
-                const grid = new THREE.GridHelper(30, 20, 0x88ff88, 0x44aa44);
-                grid.position.y = 0.01;
-                scene.add(grid);
-            }
-
-            // --- BLOK FUNCTIES ---
-            function addBlockToScene(x, y, z, size = 0.8, color = null) {
-                const finalColor = color || selectedColor;
-                const geo = new THREE.BoxGeometry(size, size, size);
-                const mat = new THREE.MeshStandardMaterial({
-                    color: finalColor,
-                    roughness: 0.4,
-                    metalness: 0.1
-                });
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set(x, y + size / 2, z);
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                mesh.userData.isBlock = true;
-                mesh.userData.size = size;
-                mesh.userData.color = finalColor;
-                mesh.userData.x = x;
-                mesh.userData.y = y;
-                mesh.userData.z = z;
-                mesh.name = 'block';
-                scene.add(mesh);
-                blocks.push(mesh);
-                blockCount++;
-                updateBlockCounter();
-                checkOpdracht();
-                return mesh;
-            }
-
-            function removeBlock(mesh) {
-                if (!mesh || !mesh.userData.isBlock) return;
-                scene.remove(mesh);
-                const idx = blocks.indexOf(mesh);
-                if (idx > -1) blocks.splice(idx, 1);
-                blockCount--;
-                updateBlockCounter();
-                mesh.geometry.dispose();
-                mesh.material.dispose();
-                checkOpdracht();
-            }
-
-            function getBlockAt(x, y, z, tolerance = 0.3) {
-                for (let b of blocks) {
-                    if (Math.abs(b.userData.x - x) < tolerance &&
-                        Math.abs(b.userData.y - y) < tolerance &&
-                        Math.abs(b.userData.z - z) < tolerance) {
-                        return b;
-                    }
-                }
-                return null;
-            }
-
-            function getBlocksByColor(color) {
-                return blocks.filter(b => b.userData.color === color);
-            }
-
-            function getBlocksByY(y, tolerance = 0.3) {
-                return blocks.filter(b => Math.abs(b.userData.y - y) < tolerance);
-            }
-
-            function updateBlockCounter() {
-                blockCountEl.textContent = blockCount;
-            }
-
-            function updateScore(punten) {
-                score += punten;
-                scoreDisplayEl.textContent = score;
-            }
-
-            // --- RAYCASTER ---
-            function getGroundIntersection(event) {
-                const rect = renderer.domElement.getBoundingClientRect();
-                const mouse = new THREE.Vector2();
-                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-                const raycaster = new THREE.Raycaster();
-                raycaster.setFromCamera(mouse, camera);
-
-                const intersects = raycaster.intersectObject(ground);
-                if (intersects.length > 0) {
-                    const point = intersects[0].point;
-                    const x = Math.round(point.x / GRID_SIZE) * GRID_SIZE;
-                    const z = Math.round(point.z / GRID_SIZE) * GRID_SIZE;
-                    // Check of er al een blok staat
-                    for (let b of blocks) {
-                        if (Math.abs(b.userData.x - x) < 0.4 && Math.abs(b.userData.z - z) < 0.4 &&
-                            Math.abs(b.userData.y - 0) < 0.1) {
-                            return null;
-                        }
-                    }
-                    return { x, z };
-                }
-                return null;
-            }
-
-            function getBlockIntersection(event) {
-                const rect = renderer.domElement.getBoundingClientRect();
-                const mouse = new THREE.Vector2();
-                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-                const raycaster = new THREE.Raycaster();
-                raycaster.setFromCamera(mouse, camera);
-
-                const intersects = raycaster.intersectObjects(blocks);
-                if (intersects.length > 0) {
-                    return intersects[0].object;
-                }
-                return null;
-            }
-
-            // --- HOOGTE BEPALEN VOOR STAPELEN ---
-            function getHeightAt(x, z) {
-                let maxY = 0;
-                for (let b of blocks) {
-                    if (Math.abs(b.userData.x - x) < 0.4 && Math.abs(b.userData.z - z) < 0.4) {
-                        const topY = b.userData.y + b.userData.size;
-                        if (topY > maxY) maxY = topY;
-                    }
-                }
-                return maxY;
-            }
-
-            // --- OPDACHT SYSTEM ---
-            function startOpdracht(name) {
-                const opdracht = OPDACHTEN[name];
-                if (!opdracht) return;
-                currentOpdracht = name;
-                voltooideStappen = new Set();
-
-                // Update panel
-                opdrachtPanel.classList.add('show');
-                opdrachtTitel.textContent = opdracht.titel;
-                opdrachtBeschrijving.textContent = opdracht.beschrijving;
-                opdrachtHint.textContent = opdracht.hint;
-                updateOpdrachtProgress();
-
-                // Toon voorbeeld
-                voorbeeldContainer.classList.add('show');
-                voorbeeldTitel.textContent = '📐 Voorbeeld: ' + opdracht.titel.replace(/[🐦🐘🔢🏗️🏰]/g, '').trim();
-                tekenVoorbeeld(opdracht.voorbeeld);
-                updateVoorbeeldStappen(opdracht.stappen);
-
-                addChatMessage('🟢 Systeem', 'Start met bouwen: ' + opdracht.titel + '! 🏗️');
-
-                // Reset blocks voor een schone start (optioneel)
-                // We laten de gebruiker zelf kiezen of ze willen wissen
-            }
-
-            function closeOpdracht() {
-                opdrachtPanel.classList.remove('show');
-                voorbeeldContainer.classList.remove('show');
-                currentOpdracht = null;
-                voltooideStappen = new Set();
-                // Toon de knoppen weer normaal
-                document.querySelectorAll('.opdracht-btn').forEach(b => b.classList.remove('active-opdracht'));
-                addChatMessage('🟢 Systeem', 'Opdracht gesloten. Kies een nieuwe! 🎯');
-            }
-
-            function checkOpdracht() {
-                if (!currentOpdracht) return;
-                const opdracht = OPDACHTEN[currentOpdracht];
-                if (!opdracht) return;
-
-                let voltooid = 0;
-                opdracht.stappen.forEach((stap, index) => {
-                    const isVoltooid = stap.check({
-                        blocks: blocks,
-                        getBlocksByColor: getBlocksByColor,
-                        getBlocksByY: getBlocksByY,
-                        getBlockAt: getBlockAt,
-                        color: stap.color,
-                        y: stap.y,
-                        size: stap.size,
-                        x: stap.x,
-                        z: stap.z
-                    });
-                    // Eenvoudige check: als er een blok is dat voldoet aan de voorwaarde
-                    // We gebruiken een simpele benadering: kijk of er blokken zijn met de juiste kleur en positie
-                    let stapVoltooid = false;
-                    if (stap.tekst.includes('oranje') || stap.tekst.includes('lijf')) {
-                        stapVoltooid = getBlocksByColor('#ff6b6b').length > 0;
-                    } else if (stap.tekst.includes('vleugels') || stap.tekst.includes('blauw')) {
-                        stapVoltooid = getBlocksByColor('#45b7d1').length >= 2;
-                    } else if (stap.tekst.includes('kop') || stap.tekst.includes('geel')) {
-                        stapVoltooid = getBlocksByColor('#ffcc00').length > 0;
-                    } else if (stap.tekst.includes('grijs') || stap.tekst.includes('lichaam')) {
-                        stapVoltooid = getBlocksByColor('#a29bfe').length > 0;
-                    } else if (stap.tekst.includes('slurf') || stap.tekst.includes('roze')) {
-                        stapVoltooid = getBlocksByColor('#ff9ff3').length > 0;
-                    } else if (stap.tekst.includes('slagtanden') || stap.tekst.includes('wit')) {
-                        stapVoltooid = getBlocksByColor('#ffffff').length >= 2;
-                    } else if (stap.tekst.includes('bovenste') || stap.tekst.includes('horizontale')) {
-                        stapVoltooid = getBlocksByY(1.5).length >= 3;
-                    } else if (stap.tekst.includes('diagonale')) {
-                        stapVoltooid = getBlocksByY(1.0).length >= 1;
-                    } else if (stap.tekst.includes('onderste') || stap.tekst.includes('op de grond')) {
-                        stapVoltooid = getBlocksByY(0.5).length >= 3;
-                    } else if (stap.tekst.includes('basis') || stap.tekst.includes('vierkant')) {
-                        stapVoltooid = getBlocksByY(0.5).length >= 4;
-                    } else if (stap.tekst.includes('toren') || stap.tekst.includes('hoog gestapeld')) {
-                        const hoogste = Math.max(...blocks.map(b => b.userData.y + b.userData.size));
-                        stapVoltooid = hoogste >= 4.0;
-                    } else if (stap.tekst.includes('vlag') || stap.tekst.includes('bovenop')) {
-                        const hoogste = Math.max(...blocks.map(b => b.userData.y + b.userData.size));
-                        stapVoltooid = hoogste >= 5.0;
-                    } else if (stap.tekst.includes('Hoofdtoren')) {
-                        stapVoltooid = getBlocksByColor('#ff9f43').length > 0;
-                    } else if (stap.tekst.includes('Kleine torens')) {
-                        stapVoltooid = getBlocksByColor('#54a0ff').length >= 2;
-                    } else if (stap.tekst.includes('Muur')) {
-                        stapVoltooid = getBlocksByColor('#1dd1a1').length >= 2;
-                    } else {
-                        // Fallback: kijk of er meer dan 5 blokken zijn
-                        stapVoltooid = blocks.length > 5;
-                    }
-
-                    if (stapVoltooid && !voltooideStappen.has(index)) {
-                        voltooideStappen.add(index);
-                        updateScore(10);
-                        addChatMessage('⭐ Score', 'Stap ' + (index + 1) + ' voltooid! +10 punten');
-                    }
-                    if (stapVoltooid) voltooid++;
-                });
-
-                updateOpdrachtProgress();
-                updateVoorbeeldStappen(opdracht.stappen);
-
-                // Controleer of alle stappen voltooid zijn
-                if (voltooid === opdracht.stappen.length) {
-                    addChatMessage('🎉 Gefeliciteerd', 'Je hebt de opdracht voltooid! +50 bonuspunten! 🏆');
-                    updateScore(50);
-                    // Kleur alle blokken goud (feest)
-                    blocks.forEach(b => {
-                        b.material.color.setHex(0xffd700);
-                        b.userData.color = '#ffd700';
-                    });
-                    setTimeout(() => {
-                        addChatMessage('🟢 Systeem', 'Kies een nieuwe opdracht of bouw verder! 🎨');
-                    }, 2000);
-                }
-            }
-
-            function updateOpdrachtProgress() {
-                const opdracht = OPDACHTEN[currentOpdracht];
-                if (!opdracht) return;
-                const total = opdracht.stappen.length;
-                const done = voltooideStappen.size;
-                opdrachtProgress.textContent = 'Voortgang: ' + done + '/' + total + ' stappen';
-            }
-
-            function updateVoorbeeldStappen(stappen) {
-                let html = '';
-                stappen.forEach((stap, index) => {
-                    const done = voltooideStappen.has(index);
-                    html += `<li class="${done ? 'done' : ''}">${stap.tekst}</li>`;
-                });
-                voorbeeldStappen.innerHTML = html;
-            }
-
-            function tekenVoorbeeld(blokken) {
-                const ctx = voorbeeldCanvas.getContext('2d');
-                ctx.clearRect(0, 0, 150, 150);
-                const scale = 20;
-                const offsetX = 75;
-                const offsetY = 130;
-
-                // Eenvoudige 2D weergave van bovenaf
-                blokken.forEach(b => {
-                    const x = offsetX + b.x * scale;
-                    const y = offsetY - b.z * scale;
-                    const size = b.size * scale;
-                    ctx.fillStyle = b.color;
-                    ctx.fillRect(x - size / 2, y - size / 2, size, size);
-                    ctx.strokeStyle = '#333';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(x - size / 2, y - size / 2, size, size);
-                });
-
-                // Labels
-                ctx.fillStyle = '#aaa';
-                ctx.font = '8px sans-serif';
-                ctx.fillText('⬆ vooraanzicht', 10, 20);
-            }
-
-            // --- EVENTS ---
-            function setupEvents() {
-                // Linkerklik: plaatsen
-                renderer.domElement.addEventListener('click', function(event) {
-                    if (event.button !== 0) return;
-
-                    if (deleteMode) {
-                        const block = getBlockIntersection(event);
-                        if (block && block.userData.isBlock) {
-                            removeBlock(block);
-                            addChatMessage('🟢 Systeem', 'Blok verwijderd! 🗑️');
-                        }
-                        return;
-                    }
-
-                    const pos = getGroundIntersection(event);
-                    if (pos) {
-                        if (blockCount >= MAX_BLOCKS) {
-                            addChatMessage('🟢 Systeem', 'Max ' + MAX_BLOCKS + ' blokken! 🛑');
-                            return;
-                        }
-                        // Bepaal hoogte (stapelen!)
-                        const height = getHeightAt(pos.x, pos.z);
-                        addBlockToScene(pos.x, height, pos.z, 0.8, selectedColor);
-                        addChatMessage('🧱 Bouwer', 'Blok geplaatst op hoogte ' + (height + 0.8).toFixed(1));
-                    }
-                });
-
-                // Rechterklik: verwijderen
-                renderer.domElement.addEventListener('contextmenu', function(event) {
-                    event.preventDefault();
-                    const block = getBlockIntersection(event);
-                    if (block && block.userData.isBlock) {
-                        removeBlock(block);
-                        addChatMessage('🟢 Systeem', 'Blok verwijderd! 🗑️');
-                    }
-                });
-
-                // Kleuren
-                document.querySelectorAll('.color-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-                        this.classList.add('active');
-                        selectedColor = this.dataset.color;
-                        if (deleteMode) toggleDeleteMode();
-                    });
-                });
-
-                // Delete modus
-                deleteBtn.addEventListener('click', toggleDeleteMode);
-
-                function toggleDeleteMode() {
-                    deleteMode = !deleteMode;
-                    deleteBtn.classList.toggle('delete-mode');
-                    deleteBtn.textContent = deleteMode ? '✅ Plaatsen' : '🗑️ Verwijder';
-                }
-
-                // Alles wissen
-                clearBtn.addEventListener('click', function() {
-                    if (blockCount === 0) return;
-                    if (confirm('Weet je zeker dat je alle blokken wilt verwijderen?')) {
-                        while (blocks.length > 0) {
-                            const b = blocks.pop();
-                            scene.remove(b);
-                            b.geometry.dispose();
-                            b.material.dispose();
-                        }
-                        blockCount = 0;
-                        updateBlockCounter();
-                        addChatMessage('🟢 Systeem', 'Alle blokken gewist! 🧹');
-                        checkOpdracht();
-                    }
-                });
-
-                // Opdracht knoppen
-                document.querySelectorAll('.opdracht-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const name = this.dataset.opdracht;
-                        document.querySelectorAll('.opdracht-btn').forEach(b => b.classList.remove(
-                        'active-opdracht'));
-                        this.classList.add('active-opdracht');
-                        // Vraag of ze eerst willen wissen
-                        if (blockCount > 0) {
-                            if (confirm('Wil je de huidige bouwwerken wissen voor een schone start?')) {
-                                while (blocks.length > 0) {
-                                    const b = blocks.pop();
-                                    scene.remove(b);
-                                    b.geometry.dispose();
-                                    b.material.dispose();
-                                }
-                                blockCount = 0;
-                                updateBlockCounter();
-                            }
-                        }
-                        startOpdracht(name);
-                    });
-                });
-
-                // Close opdracht
-                closeOpdrachtBtn.addEventListener('click', closeOpdracht);
-
-                // Chat
-                document.querySelectorAll('.chat-buttons button').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const msg = this.dataset.msg;
-                        addChatMessage('🧑 Speler', msg);
-                        setTimeout(() => {
-                            const antwoorden = [
-                                'Leuk! 🤗', 'Mooi gebouwd! 🏗️', 'Veilig hier! 🔒',
-                                'Goed idee! 👍', 'Top! 😄', 'Ga zo door! 🌟',
-                                'Wat creatief! 🎨', 'Super! ✨', 'Keep going! 💪'
-                            ];
-                            const randomAntwoord = antwoorden[Math.floor(Math.random() * antwoorden
-                            .length)];
-                            addChatMessage('🟢 VeiligBlox', randomAntwoord);
-                        }, 600);
-                    });
-                });
-            }
-
-            // --- CHAT HELPER ---
-            function addChatMessage(user, text) {
-                const container = document.getElementById('chat-messages');
-                const msg = document.createElement('div');
-                msg.className = 'msg';
-                msg.innerHTML = `<span class="user">${user}:</span> ${text}`;
-                container.appendChild(msg);
-                container.scrollTop = container.scrollHeight;
-                while (container.children.length > 30) {
-                    container.removeChild(container.firstChild);
-                }
-            }
-
-            // --- CAMERA ---
-            let angle = 0;
-
-            function animate() {
-                requestAnimationFrame(animate);
-                angle += 0.0015;
-                const radius = 18;
-                camera.position.x = Math.sin(angle) * radius;
-                camera.position.z = Math.cos(angle) * radius;
-                camera.position.y = 8 + Math.sin(angle * 0.5) * 1.5;
-                camera.lookAt(0, 0, 0);
-                renderer.render(scene, camera);
-            }
-
-            // --- RESIZE ---
-            function onResize() {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
-
-            // --- DECORATIE ---
-            function addDecoration() {
-                // Bomen
-                function addTree(x, z) {
-                    const trunk = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.3, 0.5, 1.5, 6),
-                        new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 0.9 })
-                    );
-                    trunk.position.set(x, 0.75, z);
-                    trunk.castShadow = true;
-                    trunk.receiveShadow = true;
-                    scene.add(trunk);
-
-                    const leaf = new THREE.Mesh(
-                        new THREE.SphereGeometry(1.0, 6, 6),
-                        new THREE.MeshStandardMaterial({ color: 0x2e8b57, roughness: 0.6 })
-                    );
-                    leaf.position.set(x, 2.2, z);
-                    leaf.castShadow = true;
-                    leaf.receiveShadow = true;
-                    scene.add(leaf);
-                }
-                const treePos = [
-                    [-7, -7],
-                    [7, -7],
-                    [-7, 7],
-                    [7, 7],
-                    [0, -8],
-                    [-8, 0],
-                    [8, 0],
-                    [0, 8]
-                ];
-                treePos.forEach(p => addTree(p[0], p[1]));
-            }
-
-            // --- INIT ---
-            function init() {
-                initScene();
-                createGround();
-                addDecoration();
-                setupEvents();
-                animate();
-                window.addEventListener('resize', onResize);
-
-                addChatMessage('🟢 VeiligBlox', 'Kies een bouwopdracht! 🏗️');
-                addChatMessage('🟢 VeiligBlox', 'Klik op de grond om te bouwen, blokken stapelen automatisch! 🧱');
-
-                setTimeout(() => {
-                    addChatMessage('🟢 VeiligBlox', 'Probeer: Vogel, Olifant, Cijfer 2, Toren of Kasteel! 🎯');
-                }, 2000);
-            }
-
-            init();
-
-            // Expose voor debugging
-            window.__scene = scene;
-            window.__blocks = blocks;
-
-        })();
-    </script>
-
-</body>
-</html>
+                const hemi = new THREE.HemisphereLight(0x87CEE
