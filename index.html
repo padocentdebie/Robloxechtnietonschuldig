@@ -33,7 +33,6 @@
             pointer-events: none;
         }
 
-        /* === HEADER === */
         #header {
             pointer-events: auto;
             background: rgba(0, 0, 0, 0.85);
@@ -43,7 +42,6 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 3px solid #ffcc00;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
             flex-wrap: wrap;
             gap: 8px;
         }
@@ -97,7 +95,6 @@
             border: 1px solid #ff6b6b;
         }
 
-        /* === CAMERA CONTROLE INFO === */
         #camera-info {
             pointer-events: none;
             position: absolute;
@@ -112,7 +109,6 @@
             border: 1px solid #444;
         }
 
-        /* === BOUWMENU === */
         #build-menu {
             pointer-events: auto;
             position: absolute;
@@ -124,7 +120,6 @@
             border-radius: 16px;
             padding: 14px;
             border: 2px solid #ffcc00;
-            box-shadow: 0 0 40px rgba(255, 204, 0, 0.15);
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -207,7 +202,6 @@
             box-shadow: 0 0 25px rgba(255, 204, 0, 0.5);
         }
 
-        /* === OPDACHT PANEL === */
         #opdracht-panel {
             pointer-events: auto;
             position: absolute;
@@ -219,11 +213,9 @@
             border-radius: 16px;
             padding: 16px 24px;
             border: 2px solid #ffcc00;
-            box-shadow: 0 0 40px rgba(255, 204, 0, 0.2);
             max-width: 90%;
             min-width: 280px;
             text-align: center;
-            transition: all 0.3s;
             display: none;
         }
         #opdracht-panel.show {
@@ -268,7 +260,6 @@
             background: #ff0000;
         }
 
-        /* === VOORBEELD === */
         #voorbeeld-container {
             pointer-events: auto;
             position: absolute;
@@ -280,7 +271,6 @@
             border-radius: 16px;
             padding: 14px;
             border: 2px solid #ffcc00;
-            box-shadow: 0 0 40px rgba(255, 204, 0, 0.15);
             display: none;
             flex-direction: column;
             align-items: center;
@@ -329,7 +319,6 @@
             content: "⬜ ";
         }
 
-        /* === CHAT === */
         #safe-chat {
             pointer-events: auto;
             position: absolute;
@@ -392,7 +381,6 @@
             color: #1a1a2e;
         }
 
-        /* === POLITIE === */
         #politie-knop {
             pointer-events: auto;
             position: absolute;
@@ -421,7 +409,6 @@
             box-shadow: 0 0 50px rgba(255, 0, 0, 0.7);
         }
 
-        /* === INFO === */
         #info-balk {
             pointer-events: none;
             position: absolute;
@@ -442,7 +429,6 @@
             color: #ffcc00;
         }
 
-        /* SCROLLBAR */
         #chat-messages::-webkit-scrollbar,
         #voorbeeld-container .stappen::-webkit-scrollbar {
             width: 3px;
@@ -529,7 +515,6 @@
 
     <div id="ui-overlay">
 
-        <!-- HEADER -->
         <div id="header">
             <h1>🔲 <span>Veilig</span>Blox</h1>
             <div class="header-right">
@@ -539,12 +524,8 @@
             </div>
         </div>
 
-        <!-- CAMERA INFO -->
-        <div id="camera-info">
-            🖱️ Sleep om te draaien · Scroll om in/uit te zoomen
-        </div>
+        <div id="camera-info">🖱️ Sleep om te draaien · Scroll om in/uit te zoomen</div>
 
-        <!-- OPDACHT PANEL -->
         <div id="opdracht-panel">
             <h2 id="opdracht-titel">🏗️ Bouw een vogel</h2>
             <p id="opdracht-beschrijving">Bouw een eenvoudige vogel met een oranje lijf en blauwe vleugels.</p>
@@ -553,7 +534,6 @@
             <button class="close-opdracht" id="close-opdracht">✖ Sluiten</button>
         </div>
 
-        <!-- VOORBEELD -->
         <div id="voorbeeld-container">
             <h4 id="voorbeeld-titel">📐 Voorbeeld: vogel</h4>
             <canvas id="voorbeeld-canvas" width="150" height="150"></canvas>
@@ -564,7 +544,6 @@
             </ul>
         </div>
 
-        <!-- BOUWMENU -->
         <div id="build-menu">
             <label>🎨 Kleur</label>
             <div class="color-grid">
@@ -591,7 +570,6 @@
             <button class="build-btn opdracht-btn" data-opdracht="kasteel">🏰 Kasteel</button>
         </div>
 
-        <!-- CHAT -->
         <div id="safe-chat">
             <h3>💬 Veilige Chat</h3>
             <div id="chat-messages">
@@ -605,12 +583,10 @@
             </div>
         </div>
 
-        <!-- POLITIE -->
         <a href="https://www.politie.nl/onderwerpen/online-oplichting" target="_blank" id="politie-knop">
             🚔 Meld oplichting
         </a>
 
-        <!-- INFO -->
         <div id="info-balk">
             <strong>🔒 VeiligBlox</strong> — Kies een opdracht en bouw na! 
             <span style="color:#ffcc00;">|</span> Klik op de grond om te plaatsen
@@ -618,19 +594,17 @@
 
     </div>
 
-    <!-- THREE.JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    </script>
 
     <script>
         (function() {
             'use strict';
 
-            // --- CONFIG ---
             const MAX_BLOCKS = 150;
-            const GRID_SIZE = 0.5;
             const BLOCK_SIZE = 0.8;
+            const GRID_SIZE = 0.5;
 
-            // --- STATE ---
             let selectedColor = '#ff6b6b';
             let deleteMode = false;
             let blockCount = 0;
@@ -642,12 +616,11 @@
             let isDragging = false;
             let previousMousePosition = { x: 0, y: 0 };
 
-            // --- CAMERA POSITIE ---
-            let cameraAngle = 0.3;
-            let cameraDistance = 18;
+            // CAMERA
+            let cameraAngle = 0.4;
+            let cameraDistance = 16;
             let cameraHeight = 10;
 
-            // --- DOM ---
             const blockCountEl = document.getElementById('block-count');
             const scoreDisplayEl = document.getElementById('score-display');
             const deleteBtn = document.getElementById('delete-btn');
@@ -663,7 +636,6 @@
             const voorbeeldStappen = document.getElementById('voorbeeld-stappen');
             const closeOpdrachtBtn = document.getElementById('close-opdracht');
 
-            // --- OPDACHTEN ---
             const OPDACHTEN = {
                 vogel: {
                     titel: '🐦 Bouw een vogel',
@@ -780,7 +752,6 @@
                 }
             };
 
-            // --- THREE.JS INIT ---
             function initScene() {
                 scene = new THREE.Scene();
                 scene.background = new THREE.Color(0x87CEEB);
@@ -795,4 +766,39 @@
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 document.getElementById('game-container').appendChild(renderer.domElement);
 
-                const ambient = new THREE.AmbientLight(0x404
+                const ambient = new THREE.AmbientLight(0x404060, 0.6);
+                scene.add(ambient);
+
+                const sun = new THREE.DirectionalLight(0xffeedd, 1.2);
+                sun.position.set(15, 25, 10);
+                sun.castShadow = true;
+                sun.shadow.mapSize.width = 2048;
+                sun.shadow.mapSize.height = 2048;
+                const d = 25;
+                sun.shadow.camera.left = -d;
+                sun.shadow.camera.right = d;
+                sun.shadow.camera.top = d;
+                sun.shadow.camera.bottom = -d;
+                sun.shadow.camera.near = 1;
+                sun.shadow.camera.far = 40;
+                scene.add(sun);
+
+                const fill = new THREE.DirectionalLight(0x8888ff, 0.3);
+                fill.position.set(-10, 5, -10);
+                scene.add(fill);
+
+                const hemi = new THREE.HemisphereLight(0x87CEEB, 0x3a7d44, 0.4);
+                scene.add(hemi);
+            }
+
+            function createGround() {
+                const geo = new THREE.PlaneGeometry(30, 30);
+                const mat = new THREE.MeshStandardMaterial({
+                    color: 0x5da130,
+                    roughness: 0.9,
+                    metalness: 0
+                });
+                ground = new THREE.Mesh(geo, mat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.y = 0;
+               
